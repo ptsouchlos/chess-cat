@@ -3,11 +3,13 @@ use std::fmt;
 use colored::Colorize;
 
 use crate::board::{Board, Color, Piece, PieceType};
+use crate::theme::Theme;
 
 pub struct BoardDisplay<'a> {
     pub board: &'a Board,
     pub use_ascii: bool,
     pub use_nerd_font: bool,
+    pub theme: Theme,
 }
 
 // 3-char wide × 1-row tall cells: " piece " on 8×16px terminal fonts ≈ 24×16px
@@ -24,35 +26,35 @@ impl<'a> fmt::Display for BoardDisplay<'a> {
                 let is_light = (rank + file) % 2 == 0;
                 let piece = self.board.squares[idx];
 
-                let symbol = match piece {
-                    Some(p) if self.use_ascii => piece_ascii(p),
-                    Some(p) if self.use_nerd_font => piece_nerd_font(p),
-                    Some(p) => piece_unicode(p),
-                    None => ' ',
+                // U+FE0E (VS-15) forces text presentation on unicode glyphs,
+                // preventing fonts in VS Code / Zed from rendering chess pieces
+                // as colored emoji and ignoring our foreground color.
+                let cell = match piece {
+                    Some(p) if self.use_ascii    => format!(" {} ", piece_ascii(p)),
+                    Some(p) if self.use_nerd_font => format!(" {} ", piece_nerd_font(p)),
+                    Some(p) => format!(" {}\u{FE0E} ", piece_unicode(p)),
+                    None    => "   ".to_string(),
                 };
-                let cell = format!(" {} ", symbol);
 
-                let colored = if is_light {
-                    match piece {
-                        Some(p) if p.color == Color::White => cell
-                            .truecolor(255, 255, 255)
-                            .bold()
-                            .on_truecolor(240, 217, 181),
-                        Some(_) => cell
-                            .truecolor(20, 20, 20)
-                            .bold()
-                            .on_truecolor(240, 217, 181),
-                        None => cell.on_truecolor(240, 217, 181),
-                    }
+                let (bg_r, bg_g, bg_b) = if is_light {
+                    self.theme.light_square
                 } else {
-                    match piece {
-                        Some(p) if p.color == Color::White => cell
-                            .truecolor(255, 255, 255)
+                    self.theme.dark_square
+                };
+                let colored = match piece {
+                    Some(p) if p.color == Color::White => {
+                        let (r, g, b) = self.theme.white_piece;
+                        cell.truecolor(r, g, b)
                             .bold()
-                            .on_truecolor(181, 136, 99),
-                        Some(_) => cell.truecolor(20, 20, 20).bold().on_truecolor(181, 136, 99),
-                        None => cell.on_truecolor(181, 136, 99),
+                            .on_truecolor(bg_r, bg_g, bg_b)
                     }
+                    Some(_) => {
+                        let (r, g, b) = self.theme.black_piece;
+                        cell.truecolor(r, g, b)
+                            .bold()
+                            .on_truecolor(bg_r, bg_g, bg_b)
+                    }
+                    None => cell.on_truecolor(bg_r, bg_g, bg_b),
                 };
 
                 write!(f, "{}", colored)?;
