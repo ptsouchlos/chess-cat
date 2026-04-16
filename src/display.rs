@@ -26,7 +26,11 @@ impl<'a> fmt::Display for BoardDisplay<'a> {
         };
         writeln!(f, "{}", file_header)?;
         for rank_idx in 0..8usize {
-            let rank = if self.flip { rank_idx + 1 } else { 8 - rank_idx };
+            let rank = if self.flip {
+                rank_idx + 1
+            } else {
+                8 - rank_idx
+            };
             write!(f, "{}  ", rank)?;
             for file_idx in 0..8usize {
                 let file = if self.flip { 7 - file_idx } else { file_idx };
@@ -38,10 +42,10 @@ impl<'a> fmt::Display for BoardDisplay<'a> {
                 // preventing fonts in VS Code / Zed from rendering chess pieces
                 // as colored emoji and ignoring our foreground color.
                 let cell = match piece {
-                    Some(p) if self.use_ascii    => format!(" {} ", piece_ascii(p)),
+                    Some(p) if self.use_ascii => format!(" {} ", piece_ascii(p)),
                     Some(p) if self.use_nerd_font => format!(" {} ", piece_nerd_font(p)),
                     Some(p) => format!(" {}\u{FE0E} ", piece_unicode(p)),
-                    None    => "   ".to_string(),
+                    None => "   ".to_string(),
                 };
 
                 let (bg_r, bg_g, bg_b) = if is_light {
@@ -96,7 +100,7 @@ fn write_info(board: &Board, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     write!(
         f,
         "{}",
-        format!("{:^9}", "cast")
+        format!("{:^9}", "castle")
             .white()
             .bold()
             .on_truecolor(107, 142, 35)

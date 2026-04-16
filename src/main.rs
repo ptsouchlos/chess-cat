@@ -23,17 +23,20 @@ enum ThemeChoice {
 impl ThemeChoice {
     fn theme(&self) -> Theme {
         match self {
-            ThemeChoice::Classic      => Theme::CLASSIC,
-            ThemeChoice::Green        => Theme::GREEN,
-            ThemeChoice::Ocean        => Theme::OCEAN,
+            ThemeChoice::Classic => Theme::CLASSIC,
+            ThemeChoice::Green => Theme::GREEN,
+            ThemeChoice::Ocean => Theme::OCEAN,
             ThemeChoice::HighContrast => Theme::HIGH_CONTRAST,
-            ThemeChoice::Mono         => Theme::MONO,
+            ThemeChoice::Mono => Theme::MONO,
         }
     }
 }
 
 #[derive(Parser)]
-#[command(name = "chess-cat", about = "Visualize chess positions from FEN notation")]
+#[command(
+    name = "chess-cat",
+    about = "Visualize chess positions from FEN notation"
+)]
 struct Cli {
     /// FEN string to visualize (defaults to starting position)
     fen: Option<String>,
@@ -42,9 +45,9 @@ struct Cli {
     #[arg(long)]
     ascii: bool,
 
-    /// Use Nerd Font chess glyphs instead of Unicode symbols
+    /// Use plain Unicode chess symbols instead of Nerd Font glyphs
     #[arg(long)]
-    nerd_font: bool,
+    unicode: bool,
 
     /// Disable colored output
     #[arg(long)]
@@ -68,13 +71,17 @@ fn main() {
 
     let fen = cli.fen.as_deref().unwrap_or(STARTING_FEN);
 
+    // There isn't really a reliable way to detect automatically if a nerd font is installed/used
+    // in the running terminal.
+    let use_nerd_font = !cli.ascii && !cli.unicode;
+
     match Board::parse_fen(fen) {
         Ok(board) => println!(
             "{}",
             BoardDisplay {
                 board: &board,
                 use_ascii: cli.ascii,
-                use_nerd_font: cli.nerd_font,
+                use_nerd_font,
                 theme: cli.theme.theme(),
                 flip: cli.flip,
             }
