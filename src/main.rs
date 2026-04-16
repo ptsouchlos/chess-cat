@@ -53,6 +53,10 @@ struct Cli {
     /// Board color theme
     #[arg(long, value_enum, default_value_t = ThemeChoice::Classic)]
     theme: ThemeChoice,
+
+    /// Show the board from Black's perspective
+    #[arg(long)]
+    flip: bool,
 }
 
 fn main() {
@@ -72,6 +76,7 @@ fn main() {
                 use_ascii: cli.ascii,
                 use_nerd_font: cli.nerd_font,
                 theme: cli.theme.theme(),
+                flip: cli.flip,
             }
         ),
         Err(e) => {

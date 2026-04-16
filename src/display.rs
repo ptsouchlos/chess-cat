@@ -10,6 +10,7 @@ pub struct BoardDisplay<'a> {
     pub use_ascii: bool,
     pub use_nerd_font: bool,
     pub theme: Theme,
+    pub flip: bool,
 }
 
 // 3-char wide × 1-row tall cells: " piece " on 8×16px terminal fonts ≈ 24×16px
@@ -18,10 +19,17 @@ pub struct BoardDisplay<'a> {
 
 impl<'a> fmt::Display for BoardDisplay<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "    a  b  c  d  e  f  g  h    ")?;
-        for rank in (1..=8usize).rev() {
+        let file_header = if self.flip {
+            "    h  g  f  e  d  c  b  a    "
+        } else {
+            "    a  b  c  d  e  f  g  h    "
+        };
+        writeln!(f, "{}", file_header)?;
+        for rank_idx in 0..8usize {
+            let rank = if self.flip { rank_idx + 1 } else { 8 - rank_idx };
             write!(f, "{}  ", rank)?;
-            for file in 0..8usize {
+            for file_idx in 0..8usize {
+                let file = if self.flip { 7 - file_idx } else { file_idx };
                 let idx = (8 - rank) * 8 + file;
                 let is_light = (rank + file) % 2 == 0;
                 let piece = self.board.squares[idx];
@@ -61,7 +69,7 @@ impl<'a> fmt::Display for BoardDisplay<'a> {
             }
             writeln!(f, "  {}", rank)?;
         }
-        writeln!(f, "    a  b  c  d  e  f  g  h    ")?;
+        writeln!(f, "{}", file_header)?;
         writeln!(f)?;
         write_info(self.board, f)
     }
