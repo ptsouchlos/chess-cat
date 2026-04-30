@@ -9,20 +9,33 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  publish-crates-io:
-    name: Publish to crates.io
+  create-release:
+    name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: build-release
-    if: ${{ !contains(github.ref_name, 'pre') }}
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo publish --locked --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        with:
+          fetch-depth: 0
+      - name: Extract tag message
+        id: tag
+        shell: bash
+        run: |
+          {
+            echo 'message<<TAG_MSG_EOF'
+            git tag -l --format='%(contents)' "$GITHUB_REF_NAME"
+            echo 'TAG_MSG_EOF'
+          } >> "$GITHUB_OUTPUT"
+      - uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.tag.outputs.message }}
+          generate_release_notes: true
 
   build-release:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    needs: create-release
     permissions:
       contents: write
     strategy:
@@ -69,3 +82,14 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: ${{ env.ASSET }}
+
+  publish-crates-io:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    needs: build-release
+    if: ${{ !contains(github.ref_name, 'pre') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo publish --locked --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
