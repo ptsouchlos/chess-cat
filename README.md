@@ -14,7 +14,7 @@ Clone the repository. See [build instructions](#build-instructions) for more det
 cargo install --path .
 ```
 
-### From crates.io
+### From [crates.io](https://crates.io/crates/chess-cat)
 
 ```bash
 cargo install chess-cat --locked
@@ -47,4 +47,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Author
 
 | [<img src="https://avatars0.githubusercontent.com/u/6591180?s=460&v=4" width="100"><br><sub>@ptsouchlos</sub>](https://github.com/ptsouchlos) |
-|:----:|
+| :-------------------------------------------------------------------------------------------------------------------------------------------: |
