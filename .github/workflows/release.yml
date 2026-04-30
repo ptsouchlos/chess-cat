@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish-crates-io:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    needs: build-release
+    if: ${{ !contains(github.ref_name, 'pre') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo publish --locked --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  build-release:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: Package archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin="chess-cat"
+          version="${GITHUB_REF_NAME}"
+          name="${bin}-${version}-${{ matrix.target }}"
+          mkdir "$name"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp "target/${{ matrix.target }}/release/${bin}.exe" "$name/"
+          else
+            cp "target/${{ matrix.target }}/release/${bin}" "$name/"
+          fi
+          cp README.md LICENSE "$name/"
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            7z a "${name}.zip" "$name" >/dev/null
+            echo "ASSET=${name}.zip" >> "$GITHUB_ENV"
+          else
+            tar -czf "${name}.tar.gz" "$name"
+            echo "ASSET=${name}.tar.gz" >> "$GITHUB_ENV"
+          fi
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET }}
