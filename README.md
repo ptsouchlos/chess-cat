@@ -16,8 +16,6 @@ cargo install --path .
 
 ### From crates.io
 
-> :warning: Note: `chess-cat` is not yet published on crates.io. This section will be updated once it is.
-
 ```bash
 cargo install chess-cat --locked
 ```
