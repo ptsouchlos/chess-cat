@@ -13,6 +13,7 @@ jobs:
     name: Publish to crates.io
     runs-on: ubuntu-latest
     needs: build-release
+    if: ${{ !contains(github.ref_name, 'pre') }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
