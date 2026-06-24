@@ -8,4 +8,4 @@ repository = "https://github.com/ptsouchlos/chess-cat"
 
 [dependencies]
 clap    = { version = "4", features = ["derive"] }
-colored = "2"
+colored = "3"
