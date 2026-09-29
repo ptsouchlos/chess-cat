@@ -70,8 +70,8 @@ impl<'a> fmt::Display for BoardDisplay<'a> {
                             .is_some_and(|duck_cell| duck_cell == idx as u8)
                         {
                             is_cell_duck = true;
-                            let display_type = DisplayType::from_display(&self);
-                            format!("{}", duck_formatted(&display_type))
+                            let display_type = DisplayType::from_display(self);
+                            duck_formatted(&display_type)
                         } else {
                             "   ".to_string()
                         }
@@ -252,8 +252,8 @@ fn duck_nerd_font() -> char {
 
 fn duck_formatted(display_type: &DisplayType) -> String {
     match display_type {
-        DisplayType::Ascii | DisplayType::Nerd => format!(" {} ", duck_char(&display_type)),
-        DisplayType::Unicode => format!("{} ", duck_char(&display_type)),
+        DisplayType::Ascii | DisplayType::Nerd => format!(" {} ", duck_char(display_type)),
+        DisplayType::Unicode => format!("{} ", duck_char(display_type)),
     }
 }
 
