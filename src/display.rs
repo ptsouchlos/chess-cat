@@ -13,6 +13,23 @@ pub struct BoardDisplay<'a> {
     pub flip: bool,
 }
 
+enum DisplayType {
+    Ascii,
+    Unicode,
+    Nerd,
+}
+
+impl DisplayType {
+    fn from_display(board_display: &BoardDisplay) -> Self {
+        if board_display.use_ascii {
+            DisplayType::Ascii
+        } else if board_display.use_nerd_font {
+            DisplayType::Nerd
+        } else {
+            DisplayType::Unicode
+        }
+    }
+}
 // 3-char wide × 1-row tall cells: " piece " on 8×16px terminal fonts ≈ 24×16px
 // per square — compact and readable.
 // Board line width: 3 (rank) + 8×3 (squares) + 3 (rank) = 30 chars.
@@ -41,11 +58,24 @@ impl<'a> fmt::Display for BoardDisplay<'a> {
                 // U+FE0E (VS-15) forces text presentation on unicode glyphs,
                 // preventing fonts in VS Code / Zed from rendering chess pieces
                 // as colored emoji and ignoring our foreground color.
+                let mut is_cell_duck = false;
                 let cell = match piece {
                     Some(p) if self.use_ascii => format!(" {} ", piece_ascii(p)),
                     Some(p) if self.use_nerd_font => format!(" {} ", piece_nerd_font(p)),
                     Some(p) => format!(" {}\u{FE0E} ", piece_unicode(p)),
-                    None => "   ".to_string(),
+                    None => {
+                        if self
+                            .board
+                            .duck_square
+                            .is_some_and(|duck_cell| duck_cell == idx as u8)
+                        {
+                            is_cell_duck = true;
+                            let display_type = DisplayType::from_display(&self);
+                            format!("{}", duck_formatted(&display_type))
+                        } else {
+                            "   ".to_string()
+                        }
+                    }
                 };
 
                 let (bg_r, bg_g, bg_b) = if is_light {
@@ -66,7 +96,16 @@ impl<'a> fmt::Display for BoardDisplay<'a> {
                             .bold()
                             .on_truecolor(bg_r, bg_g, bg_b)
                     }
-                    None => cell.on_truecolor(bg_r, bg_g, bg_b),
+                    None => {
+                        if is_cell_duck {
+                            let (r, g, b) = self.theme.duck;
+                            cell.truecolor(r, g, b)
+                                .bold()
+                                .on_truecolor(bg_r, bg_g, bg_b)
+                        } else {
+                            cell.on_truecolor(bg_r, bg_g, bg_b)
+                        }
+                    }
                 };
 
                 write!(f, "{}", colored)?;
@@ -169,6 +208,10 @@ fn piece_unicode(piece: Piece) -> char {
     }
 }
 
+fn duck_unicode() -> char {
+    '🦆'
+}
+
 fn piece_ascii(piece: Piece) -> char {
     match (piece.color, piece.piece_type) {
         (Color::White, PieceType::King) => 'K',
@@ -186,6 +229,10 @@ fn piece_ascii(piece: Piece) -> char {
     }
 }
 
+fn duck_ascii() -> char {
+    'D'
+}
+
 fn piece_nerd_font(piece: Piece) -> char {
     // Material Design chess glyphs (md-chess_*). No white/black variants exist in
     // Nerd Fonts — team is conveyed by text color applied by the renderer.
@@ -196,6 +243,25 @@ fn piece_nerd_font(piece: Piece) -> char {
         PieceType::Bishop => '\u{f085c}', // md-chess_bishop
         PieceType::Knight => '\u{f0858}', // md-chess_knight
         PieceType::Pawn => '\u{f0859}',   // md-chess_pawn
+    }
+}
+
+fn duck_nerd_font() -> char {
+    '\u{f01e5}'
+}
+
+fn duck_formatted(display_type: &DisplayType) -> String {
+    match display_type {
+        DisplayType::Ascii | DisplayType::Nerd => format!(" {} ", duck_char(&display_type)),
+        DisplayType::Unicode => format!("{} ", duck_char(&display_type)),
+    }
+}
+
+fn duck_char(display_type: &DisplayType) -> char {
+    match display_type {
+        DisplayType::Ascii => duck_ascii(),
+        DisplayType::Unicode => duck_unicode(),
+        DisplayType::Nerd => duck_nerd_font(),
     }
 }
 
