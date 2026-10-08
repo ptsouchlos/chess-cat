@@ -83,6 +83,7 @@ pub struct Board {
     pub en_passant_square: Option<usize>,
     pub halfmove_clock: u32,
     pub fullmove_number: u32,
+    pub duck_square: Option<u8>,
 }
 
 impl Board {
@@ -112,7 +113,7 @@ impl Board {
 
         let mut squares = [None; 64];
         let mut square_idx = 0;
-
+        let mut duck_square = None;
         for rank in pieces_part.split('/') {
             for c in rank.chars() {
                 if let Some(empty) = c.to_digit(10) {
@@ -121,7 +122,13 @@ impl Board {
                     if square_idx >= 64 {
                         return Err("FEN piece placement overflows board".to_string());
                     }
-                    squares[square_idx] = Some(Piece::from_str(&c.to_string())?);
+                    if c == '*' {
+                        // Duck FEN, so record the duck square index
+                        duck_square = Some(square_idx as u8)
+                    } else {
+                        squares[square_idx] = Some(Piece::from_str(&c.to_string())?);
+                    }
+                    // Increment the square index
                     square_idx += 1;
                 }
             }
@@ -156,6 +163,7 @@ impl Board {
             en_passant_square,
             halfmove_clock,
             fullmove_number,
+            duck_square,
         })
     }
 }
@@ -232,5 +240,21 @@ mod tests {
         assert_eq!(board.active_color, Color::Black);
         // e3: file e=4, rank 3 → index (8-3)*8+4 = 44
         assert_eq!(board.en_passant_square, Some(44));
+    }
+
+    #[test]
+    fn parse_duck_chess_fens() {
+        const DUCK_FENS: &[&str] = &[
+            "r3k2r/2pb1ppp/2pp1q2/p7/1nP1B3/1P1*P3/P2N1PPP/R2QK2R w KQkq a6 0 14",
+            "4rrk1/2p1b1p1/p1p3q1/4p3/2P1*n1p/1P1NR2P/PB3PP1/3R1QK1 b - - 2 24",
+            "r3qbrk/6p1/2b2pPp/p3pP1Q/PpPpP2P/1*1P1B2/2PB3K/R5R1 w - - 16 42",
+            "6k1/1R3p2/6p1/2Bp3p/3P2q1/P*6/1P2rQ1K/5R2 b - - 4 44",
+            "8/8/1p2k1p1/3p2*p/1p1P1P1P/1P2PK2/8/8 w - - 3 54",
+        ];
+
+        for fen in DUCK_FENS.iter() {
+            let board = Board::parse_fen(fen).unwrap();
+            assert!(board.duck_square.is_some());
+        }
     }
 }
