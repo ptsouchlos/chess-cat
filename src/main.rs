@@ -35,7 +35,8 @@ impl ThemeChoice {
 #[derive(Parser)]
 #[command(
     name = "chess-cat",
-    about = "Visualize chess positions from FEN notation"
+    about = "Visualize chess positions from FEN notation",
+    version
 )]
 struct Cli {
     /// FEN string to visualize (defaults to starting position)
